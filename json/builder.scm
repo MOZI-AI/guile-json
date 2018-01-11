@@ -30,8 +30,26 @@
   #:use-module (ice-9 format)
   #:use-module (srfi srfi-1)
   #:use-module (rnrs bytevectors)
+  #:use-module (rnrs records inspection)
+  #:use-module (rnrs records syntactic)
   #:export (scm->json
-            scm->json-string))
+            scm->json-string
+            make-node-data
+            node-data?
+            node-data-id
+            make-node
+            node-data
+            node?
+            make-edge-data
+            edge-data?
+            edge-data-id
+            make-edge
+            edge-data
+            edge?
+            make-graph
+            graph?
+            graph-nodes
+            graph-edges))
 
 ;;
 ;; String builder helpers
@@ -166,12 +184,86 @@
                   (build-object-pair p port escape pretty (+ level 1)))
                 (cdr pairs))))
   (build-newline port pretty)
-  (simple-format port "~A}" (indent-string pretty level)))
+  (simple-format port "~A}" (indent-string pretty level))
+  (build-newline port pretty))
 
-(define (json-build scm port escape pretty level)
+;;
+;; Graph builder helpers
+;;
+
+;;Record Definitions
+(define-record-type node-data (fields id name defn group))
+(define-record-type node (fields data group))
+
+(define-record-type edge-data (fields source target name group))
+(define-record-type edge (fields data group))
+(define-record-type graph (fields nodes edges))
+;;
+;; Graph builder
+;;
+(define (json-build-node-data scm port escape pretty level)
+      (let* (
+        (id (node-data-id scm))
+        (name (node-data-name scm))
+        (defn (node-data-defn scm))
+        (group (node-data-group scm))
+        (dict '())
+      )
+        (set! dict (acons "id" id (acons "name" name (acons "definition" defn (acons "group" group dict)))))
+        (json-build-object dict port escape pretty level)      
+        )
+
+)
+(define (json-build-node scm port escape pretty level)
+    (let* (
+        (data (node-data scm))
+        (group (node-group scm))
+        (dict '())
+    )
+        (set! dict (acons "data" data (acons "group" group dict)))
+        (json-build-object dict port escape pretty level)
+    )
+)
+
+(define (json-build-edge-data scm port escape pretty level)
+      (let* (
+        (source (edge-data-source scm))
+        (target (edge-data-target scm))
+        (name (edge-data-name scm))
+        (group (edge-data-group scm))
+        (dict '())
+      )
+        (set! dict (acons "source" source (acons "target" target (acons "name" name (acons "group" group dict)))))
+        (json-build-object dict port escape pretty level)
+        )
+)
+
+(define (json-build-edge scm port escape pretty level)
+    (let* (
+        (data (edge-data scm))
+        (group (edge-group scm))
+        (dict '())
+    )
+      (set! dict (acons "data" data (acons "group" group dict)))
+      (json-build-object dict port escape pretty level)   
+    )
+)
+
+(define (json-build-graph scm port escape pretty level)
+    (let* (
+      (nodes (graph-nodes scm))
+      (edges (graph-edges scm))
+      (dict '())
+    ) 
+     (set! dict (acons "nodes" nodes (acons "edges" edges dict)))
+     (json-build-object dict port escape pretty level) 
+    )
+)
+
+(define* (json-build scm port escape pretty level)
   (cond
    ((eq? scm #nil) (json-build-null port))
-   ((boolean? scm) (json-build-boolean scm port))
+   ((boolean? scm) (  json-build-boolean scm port))
    ((number? scm) (json-build-number scm port))
    ((symbol? scm) (json-build-string (symbol->string scm) port escape))
    ((string? scm) (json-build-string scm port escape))
@@ -179,6 +271,16 @@
    ((list? scm) (json-build-array scm port escape pretty level))
    ((hash-table? scm)
     (json-build-object (hash-map->list cons scm) port escape pretty level))
+  
+   ((record? scm)
+      (cond
+        ((node-data? scm) (json-build-node-data scm port escape pretty level))
+        ((edge-data? scm) (json-build-edge-data scm port escape pretty level))
+        ((node? scm) (json-build-node scm port escape pretty level))
+        ((edge? scm) (json-build-edge scm port escape pretty level))
+        ((graph? scm) (json-build-graph scm port escape pretty level))
+        )
+   )
    (else (throw 'json-invalid))))
 
 ;;
@@ -189,7 +291,7 @@
                     #:optional (port (current-output-port))
                     #:key (escape #f) (pretty #f))
   "Creates a JSON document from native. The argument @var{scm} contains
-the native value of the JSON document. Takes one optional argument,
+the native value o  f the JSON document. Takes one optional argument,
 @var{port}, which defaults to the current output port where the JSON
 document will be written."
   (json-build scm port escape pretty 0))
