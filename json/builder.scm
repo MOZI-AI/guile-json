@@ -49,7 +49,10 @@
             make-graph
             graph?
             graph-nodes
-            graph-edges))
+            graph-edges
+            make-result
+            result-text
+            result-graph))
 
 ;;
 ;; String builder helpers
@@ -198,6 +201,8 @@
 (define-record-type edge-data (fields source target name group))
 (define-record-type edge (fields data group))
 (define-record-type graph (fields nodes edges))
+
+(define-record-type result (fields text graph))
 ;;
 ;; Graph builder
 ;;
@@ -260,6 +265,17 @@
     )
 )
 
+(define (json-build-result scm port escape pretty level)
+    (let* (
+      (text (result-text scm))
+      (graph (result-graph scm))
+      (dict '())
+    )
+      (set! dict (acons "text" text (acons "graph" graph dict)))
+      (json-build-object dict port escape pretty level)
+    )
+)
+
 (define* (json-build scm port escape pretty level)
   (cond
    ((eq? scm #nil) (json-build-null port))
@@ -279,6 +295,7 @@
         ((node? scm) (json-build-node scm port escape pretty level))
         ((edge? scm) (json-build-edge scm port escape pretty level))
         ((graph? scm) (json-build-graph scm port escape pretty level))
+        ((result? scm) (json-build-result scm port escape pretty level))
         )
    )
    (else (throw 'json-invalid))))
