@@ -195,7 +195,7 @@
 ;;
 
 ;;Record Definitions
-(define-record-type node-data (fields id name defn group))
+(define-record-type node-data (fields id name defn location group))
 (define-record-type node (fields data group))
 
 (define-record-type edge-data (fields source target name group))
@@ -211,10 +211,11 @@
         (id (node-data-id scm))
         (name (node-data-name scm))
         (defn (node-data-defn scm))
+        (location (node-data-location scm))
         (group (node-data-group scm))
         (dict '())
       )
-        (set! dict (acons "id" id (acons "name" name (acons "definition" defn (acons "group" group dict)))))
+        (set! dict (acons "id" id (acons "name" name (acons "definition" defn (acons "location" location (acons "group" group dict))))))
         (json-build-object dict port escape pretty level)      
         )
 
