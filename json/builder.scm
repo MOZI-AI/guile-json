@@ -198,7 +198,7 @@
 (define-record-type node-data (fields id name defn location group))
 (define-record-type node (fields data group))
 
-(define-record-type edge-data (fields source target name group))
+(define-record-type edge-data (fields source target name pubid group))
 (define-record-type edge (fields data group))
 (define-record-type graph (fields nodes edges))
 
@@ -237,9 +237,10 @@
         (target (edge-data-target scm))
         (name (edge-data-name scm))
         (group (edge-data-group scm))
+        (pubid (edge-data-group scm))
         (dict '())
       )
-        (set! dict (acons "source" source (acons "target" target (acons "name" name (acons "group" group dict)))))
+        (set! dict (acons "source" source (acons "target" target (acons "name" name (acons "pubmedId" pubid (acons "group" group dict))))))
         (json-build-object dict port escape pretty level)
         )
 )
