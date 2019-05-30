@@ -237,7 +237,7 @@
         (target (edge-data-target scm))
         (name (edge-data-name scm))
         (group (edge-data-group scm))
-        (pubid (edge-data-group scm))
+        (pubid (edge-data-pubid scm))
         (dict '())
       )
         (set! dict (acons "source" source (acons "target" target (acons "name" name (acons "pubmedId" pubid (acons "group" group dict))))))
